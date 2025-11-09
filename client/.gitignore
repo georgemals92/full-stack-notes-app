@@ -1,0 +1,14 @@
+# ===== Client-specific .gitignore (keeps root file concise) =====
+
+# Client build / dev output
+/dist
+/.vite
+
+# Local overrides
+*.local
+
+# Keep editor exceptions - track recommended extensions
+.vscode/*
+!.vscode/extensions.json
+
+
