@@ -11,7 +11,7 @@ function App() {
   // State variables
   const [notes, setNotes] = useState([]);
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState('');
   const [tags, setTags] = useState('');
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(false);
@@ -56,13 +56,13 @@ function App() {
       const created = await apiCreateNote({ 
         title: title.trim(),
         body,
-        category,
+        categories: categories.split(',').map(c => c.trim()).filter(Boolean),
         tags: tags.split(',').map(t => t.trim()).filter(Boolean)
       }); 
       setNotes(prev => [created, ...prev]);
       setTitle(''); 
       setBody('');
-      setCategory('');
+      setCategories('');
       setTags('');
     
     } catch (err) {
@@ -75,10 +75,11 @@ function App() {
     try {
       // Convert comma-separated tags string into an array
       const tagsArray = (editingNote.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+      const catsArray = (editingNote.categories || '').split(',').map(t => t.trim()).filter(Boolean);
       const payload = {
         title: editingNote.title,
         body: editingNote.body,
-        category: editingNote.category,
+        categories: catsArray,
         tags: tagsArray
       };
 
@@ -96,7 +97,7 @@ function App() {
       setEditingNote(null);
       setTitle(''); 
       setBody('');
-      setCategory('');
+      setCategories('');
       setTags('');
     
     } catch (err) {
@@ -174,9 +175,9 @@ function App() {
         </div>
         <div>
           <input
-            placeholder="Category"
-            value={category}
-            onChange={e => setCategory(e.target.value)}
+            placeholder="Categories (comma separated)"
+            value={categories}
+            onChange={e => setCategories(e.target.value)}
             style={{ marginBottom: '0.5rem', padding: '0.5rem', width: '100%', minWidth: 500, boxSizing: 'border-box' }}
           />
         </div>
@@ -224,9 +225,9 @@ function App() {
                   style={{ width: '100%', padding: '0.25rem' }}
                 />
                 <input
-                  placeholder="Category"
-                  value={editingNote.category}
-                  onChange={e => setEditingNote({ ...editingNote, category: e.target.value})}
+                  placeholder="Categories (comma separated)"
+                  value={editingNote.categories}
+                  onChange={e => setEditingNote({ ...editingNote, categories: e.target.value})}
                   style={{ width: '100%', padding: '0.25rem', marginTop: '0.25rem' }}
                 />
                 <input
@@ -251,17 +252,27 @@ function App() {
                   {/* Converts date to date object and handles format */}
                   {new Date(note.createdAt).toLocaleString()}
                 </div>
-                <div style={{ fontSize: 14, marginTop: 6 }}>{note.category}</div>
+                <div style={{ fontSize: 14, marginTop: 6 }}>
+                  {/* Destructures category array elements */}
+                  {Array.isArray(note.categories) ? note.categories.map(
+                      (c, id) => <span key={id} style={{margin: '0.25rem', padding: 4, backgroundColor:'#f2f2f2', color: '#242424', borderRadius: 4}}>{c}</span>) 
+                    : note.categories
+                  }
+                </div>
                 <div style={{ fontSize: 14, marginTop: 6 }}>
                   {/* Destructures tag array elements */}
-                  {Array.isArray(note.tags) ? note.tags.map(t => <span style={{margin: '0.25rem', padding: 4, backgroundColor:'#f2f2f2', color: '#242424', borderRadius: 4}}>{t}</span>) : note.tags}
+                  {Array.isArray(note.tags) ? note.tags.map(
+                    (t, id) => <span key={id} style={{margin: '0.25rem', padding: 4, backgroundColor:'#f2f2f2', color: '#242424', borderRadius: 4}}>{t}</span>) 
+                    : note.tags
+                  }
                 </div>
                 <div style={{ fontSize: 14, marginTop: 6 }}>{note.body}</div>
                 <div style={{ marginTop: 8 }}>
                   <button onClick={() => setEditingNote({
                     ...note,
-                    // Ensures tags show up as a comma-separated string in the edit input
-                    tags: Array.isArray(note.tags) ? note.tags.join(', ') : (note.tags || '')
+                    // Ensures tags & categories show up as a comma-separated string in the edit input
+                    tags: Array.isArray(note.tags) ? note.tags.join(', ') : (note.tags || ''),
+                    categories: Array.isArray(note.categories) ? note.categories.join(', ') : (note.categories || '')
                   })}>Edit</button>
                   <button onClick={() => handleDelete(note._id)} style={{ marginLeft: 8 }}>Delete</button>
                 </div>
