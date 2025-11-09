@@ -15,7 +15,7 @@ const getNotes = async (req, res) => {
     
     const query = {};
 
-    if (category) {query.category = category;}
+    if (category) {query.categories = category;}
     
     if (tag) {query.tags = tag};
     
@@ -41,12 +41,12 @@ const getNotes = async (req, res) => {
 // Create note
 const createNote = async (req, res) => {
   try {
-    const { title, body, category, tags } = req.body;
+    const { title, body, categories, tags } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required' });
     const note = new Note({ 
       title,
       body,
-      category: category || '',
+      categories: Array.isArray(categories) ? categories : [],
       tags: Array.isArray(tags) ? tags : [] 
     });
     
@@ -61,11 +61,11 @@ const createNote = async (req, res) => {
 const updateNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, body, category, tags } = req.body;
+    const { title, body, categories, tags } = req.body;
 
     const updated = await Note.findByIdAndUpdate(
       id,
-      { title, body, category, tags },
+      { title, body, categories, tags },
       { new: true, runValidators: true }
     );
 
