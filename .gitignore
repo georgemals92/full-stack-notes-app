@@ -42,5 +42,8 @@ pids/
 # Misc
 *.local
 
+# Documentation (personal usage only)
+docs/
+
 # Track lockfiles (do not ignore): package-lock.json, yarn.lock, pnpm-lock.yaml
 
