@@ -49,6 +49,7 @@ function App() {
     const params = new URLSearchParams();
     filterTags.forEach(id => params.append('tags', id));
     filterCategories.forEach(id => params.append('categories', id));
+    params.set('search', searchQuery);
     params.set('sortBy', sortBy);
     params.set('order', order);
     const q = params.toString();
