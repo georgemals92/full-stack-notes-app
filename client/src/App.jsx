@@ -1,36 +1,65 @@
 // Imports
 import './App.css'
 import { useEffect, useState } from 'react';
+
+// Service imports
 import { getNotes as apiGetNotes,
          createNote as apiCreateNote,
          updateNote as apiUpdateNote,
          deleteNote as apiDeleteNote
 } from './services/noteService';
+import { getTags as apiGetTags } from './services/tagService';
+import { getCategories as apiGetCategories} from './services/categoryService'; 
+
 
 function App() {
-  // State variables
-  const [notes, setNotes] = useState([]);
-  const [title, setTitle] = useState('');
-  const [categories, setCategories] = useState('');
-  const [tags, setTags] = useState('');
-  const [body, setBody] = useState('');
+  // General state variables
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // State for master lists
+  const [notes, setNotes] = useState([]);
+  const [allTags, setAllTags] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
+
+  // State variables for create and update notes
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  
+  // States for tags and category IDs in create and update note?
+  const [selectedTagIds, setSelectedTagIds] = useState([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+
+  // States for ?????
+  const [editSelectedTagIds, setEditSelectedTagIds] = useState([]);
+  const [editSelectedCategoryIds, setEditSelectedCategoryIds] = useState([]);
+
+  // State for note selected to edit
   const [editingNote, setEditingNote] = useState(null); // tracks the note being edited
   
   //Filtering, search, sorting states
-  const [filterCategory, setFilterCategory] = useState('');
-  const [filterTag, setFilterTag] = useState('');
+  const [filterCategories, setFilterCategories] = useState([]);
+  const [filterTags, setFilterTags] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('createdAt'); //default as in API controller
   const [order, setOrder] = useState('desc'); // default as in API controller 
 
   // Construct query params for notes fetching
-  let query = '?';
-  if (filterTag) {query += `tag=${filterTag}&`};
-  if (filterCategory) {query += `category=${filterCategory}&`};
-  if (searchQuery) {query += `search=${searchQuery}&`};
-  query += `sortBy=${sortBy}&order=${order}`;  
+  const buildQuery = () => {
+    const params = new URLSearchParams();
+    filterTags.forEach(id => params.append('tags', id));
+    filterCategories.forEach(id => params.append('categories', id));
+    params.set('sortBy', sortBy);
+    params.set('order', order);
+    const q = params.toString();
+    console.log(q);
+    return q ? `?${q}` : '';
+  } 
+
+  // Helper function to read selected values from <select multiple>
+  const getSelectedValues = (e) => {
+    return Array.from(e.target.selectedOptions, o => o.value);
+  }
 
   async function loadNotes(query = '') {
     setLoading(true);
@@ -46,7 +75,19 @@ function App() {
     }
   }
 
-  useEffect(() => { loadNotes(); }, []);
+  useEffect(() => { 
+    ( async () => {
+      try {
+        const [tags, categories] = await Promise.all([apiGetTags(), apiGetCategories()]);
+        setAllTags(tags);
+        setAllCategories(categories);
+      } catch (e) {
+        console.warn('Failed to load tags / categories', e);
+      } finally {
+        loadNotes(); //loadNotes(buildQuery()); -> check
+      }
+    })() //why parenthesis in the end?
+  }, []);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -56,14 +97,14 @@ function App() {
       const created = await apiCreateNote({ 
         title: title.trim(),
         body,
-        categories: categories.split(',').map(c => c.trim()).filter(Boolean),
-        tags: tags.split(',').map(t => t.trim()).filter(Boolean)
+        categories: selectedCategoryIds,
+        tags: selectedTagIds
       }); 
       setNotes(prev => [created, ...prev]);
       setTitle(''); 
       setBody('');
-      setCategories('');
-      setTags('');
+      setSelectedCategoryIds([]);
+      setSelectedTagIds([]);
     
     } catch (err) {
       setError(err.message);
@@ -74,22 +115,13 @@ function App() {
     e.preventDefault();
     try {
       // Convert comma-separated tags string into an array
-      const tagsArray = (editingNote.tags || '').split(',').map(t => t.trim()).filter(Boolean);
-      const catsArray = (editingNote.categories || '').split(',').map(t => t.trim()).filter(Boolean);
       const payload = {
         title: editingNote.title,
         body: editingNote.body,
-        categories: catsArray,
-        tags: tagsArray
+        categories: editSelectedCategoryIds,
+        tags: editSelectedTagIds
       };
 
-      const res = await fetch(`/api/notes/${editingNote._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error('Failed to update');
-      
       // Use same payload for the api helper so the update is consistent
       const updated = await apiUpdateNote(editingNote._id, payload);
       
@@ -97,8 +129,10 @@ function App() {
       setEditingNote(null);
       setTitle(''); 
       setBody('');
-      setCategories('');
-      setTags('');
+      setEditSelectedCategoryIds([]);
+      setEditSelectedTagIds([]);
+      setSelectedCategoryIds([]);
+      setSelectedTagIds([]);
     
     } catch (err) {
       setError(err.message);
@@ -128,19 +162,29 @@ function App() {
           onChange={e => setSearchQuery(e.target.value)}
         />
 
-        <input
-          placeholder="Filter by Category"
-          value={filterCategory}
+        <select
+          multiple
+          title="Filter by Category"
+          value={filterCategories}
           style={{height: '100%', boxSizing: 'border-box'}}
-          onChange={e => setFilterCategory(e.target.value)}
-        />
+          onChange={e => setFilterCategories(getSelectedValues(e))}
+        >
+          {allCategories.map((c)=>{
+            return <option key={c._id} value={c._id}>{c.name}</option>;
+          })}
+        </select>
 
-        <input
-          placeholder="Filter by Tag"
-          value={filterTag}
+        <select
+          multiple
+          title="Filter by Tag"
+          value={filterTags}
           style={{height: '100%', boxSizing: 'border-box'}}
-          onChange={e => setFilterTag(e.target.value)}
-        />
+          onChange={e => setFilterTags(getSelectedValues(e))}
+        >
+          {allTags.map((t)=>{
+            return <option key={t._id} value={t._id}>{t.name}</option>;
+          })}
+        </select>
 
         <select 
           value={sortBy} 
@@ -158,7 +202,7 @@ function App() {
           <option value="asc">Ascending</option>
         </select>
 
-        <button onClick={() => loadNotes(query)} style={{height: '100%', width:'62px', boxSizing: 'border-box', padding:0}}>Apply</button>
+        <button onClick={() => loadNotes(buildQuery())} style={{height: '100%', width:'62px', boxSizing: 'border-box', padding:0}}>Apply</button>
       </div>
 
       <h3 style={{textAlign:'left'}}>Create note</h3>
@@ -174,20 +218,31 @@ function App() {
           />
         </div>
         <div>
-          <input
-            placeholder="Categories (comma separated)"
-            value={categories}
-            onChange={e => setCategories(e.target.value)}
-            style={{ marginBottom: '0.5rem', padding: '0.5rem', width: '100%', minWidth: 500, boxSizing: 'border-box' }}
-          />
+          <select
+          multiple
+          placeholder="Categories (multiple selection)"
+          value={selectedCategoryIds}
+          style={{height: '100%', minWidth:140, boxSizing: 'border-box'}}
+          onChange={e => setSelectedCategoryIds(getSelectedValues(e))}
+          >
+            {allCategories.map((c)=>{
+              return <option key={c._id} value={c._id}>{c.name}</option>;
+            })}
+          </select>
         </div>
         <div>
-          <input
-            placeholder="Tags (comma separated)"
-            value={tags}
-            onChange={e => setTags(e.target.value)}
-            style={{ padding: '0.5rem', width: '100%', minWidth: 500, boxSizing: 'border-box' }}
-          />
+          <select
+            multiple
+            placeholder="Tags (multiple selection)"
+            value={selectedTagIds}
+            style={{height: '100%', minWidth:140, boxSizing: 'border-box'}}
+            onChange={e => setSelectedTagIds(getSelectedValues(e))}
+          >
+            {allTags.map((t)=>{
+              return <option key={t._id} value={t._id}>{t.name}</option>;
+            })}
+          </select>
+          
         </div>
         <div style={{ marginTop: '0.5rem' }}>
           <textarea
@@ -224,25 +279,41 @@ function App() {
                   required
                   style={{ width: '100%', padding: '0.25rem' }}
                 />
-                <input
-                  placeholder="Categories (comma separated)"
-                  value={editingNote.categories}
-                  onChange={e => setEditingNote({ ...editingNote, categories: e.target.value})}
-                  style={{ width: '100%', padding: '0.25rem', marginTop: '0.25rem' }}
-                />
-                <input
-                  placeholder="Tags (comma separated)"
-                  value={editingNote.tags}
-                  onChange={e => setEditingNote({ ...editingNote, tags: e.target.value })}
-                  style={{ width: '100%', padding: '0.25rem', marginTop: '0.25rem' }}
-                />
+                <select
+                  multiple
+                  title="Categories (multiple selection)"
+                  value={editSelectedCategoryIds}
+                  style={{height: '100%', minWidth:140, boxSizing: 'border-box'}}
+                  onChange={e => setEditSelectedCategoryIds(getSelectedValues(e))}
+                >
+                  {allCategories.map((c)=>{
+                    return <option key={c._id} value={c._id}>{c.name}</option>;
+                  })}
+                </select>
+                <select
+                  multiple
+                  title="Tags (multiple selection)"
+                  value={editSelectedTagIds}
+                  style={{height: '100%', minWidth:140, boxSizing: 'border-box'}}
+                  onChange={e => setEditSelectedTagIds(getSelectedValues(e))}
+                >
+                  {allTags.map((t)=>{
+                    return <option key={t._id} value={t._id}>{t.name}</option>;
+                  })}
+                </select>
                 <textarea
                   value={editingNote.body}
                   onChange={e => setEditingNote({ ...editingNote, body: e.target.value })}
                   style={{ width: '100%', padding: '0.25rem', marginTop: '0.25rem' }}
                 />
                 <button type="submit" style={{ marginTop: 6 }}>Save</button>
-                <button type="button" onClick={() => setEditingNote(null)} style={{ marginLeft: 6 }}>Cancel</button>
+                <button type="button" onClick={() => {
+                  setEditingNote(null);
+                  setEditSelectedCategoryIds([]);
+                  setEditSelectedTagIds([]);
+                  setSelectedCategoryIds([]);
+                  setSelectedTagIds([]);
+                  }} style={{ marginLeft: 6 }}>Cancel</button>
               </form>
             ) : (
               // Note display when not being updated
@@ -255,25 +326,26 @@ function App() {
                 <div style={{ fontSize: 14, marginTop: 6 }}>
                   {/* Destructures category array elements */}
                   {Array.isArray(note.categories) ? note.categories.map(
-                      (c, id) => <span key={id} style={{margin: '0.25rem', padding: 4, backgroundColor:'#f2f2f2', color: '#242424', borderRadius: 4}}>{c}</span>) 
+                      (c, id) => <span key={id} style={{margin: '0.25rem', padding: 4, backgroundColor:'#f2f2f2', color: '#242424', borderRadius: 4}}>{c.name}</span>) 
                     : note.categories
                   }
                 </div>
                 <div style={{ fontSize: 14, marginTop: 6 }}>
                   {/* Destructures tag array elements */}
                   {Array.isArray(note.tags) ? note.tags.map(
-                    (t, id) => <span key={id} style={{margin: '0.25rem', padding: 4, backgroundColor:'#f2f2f2', color: '#242424', borderRadius: 4}}>{t}</span>) 
+                    (t, id) => <span key={id} style={{margin: '0.25rem', padding: 4, backgroundColor:'#f2f2f2', color: '#242424', borderRadius: 4}}>{t.name}</span>) 
                     : note.tags
                   }
                 </div>
                 <div style={{ fontSize: 14, marginTop: 6 }}>{note.body}</div>
                 <div style={{ marginTop: 8 }}>
-                  <button onClick={() => setEditingNote({
-                    ...note,
-                    // Ensures tags & categories show up as a comma-separated string in the edit input
-                    tags: Array.isArray(note.tags) ? note.tags.join(', ') : (note.tags || ''),
-                    categories: Array.isArray(note.categories) ? note.categories.join(', ') : (note.categories || '')
-                  })}>Edit</button>
+                  <button onClick={() => {
+                    setEditingNote({_id: note._id, title: note.title, body: note.body});
+                    setEditSelectedCategoryIds(Array.isArray(note.categories) ? note.categories.map(c => String(c._id)) : []);
+                    setEditSelectedTagIds(Array.isArray(note.tags) ? note.tags.map(t => String(t._id)) : []);
+                    }}>
+                    Edit
+                  </button>
                   <button onClick={() => handleDelete(note._id)} style={{ marginLeft: 8 }}>Delete</button>
                 </div>
               </>

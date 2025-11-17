@@ -13,3 +13,4 @@ pids/
 .env
 .env.*.local
 
+db_backup/

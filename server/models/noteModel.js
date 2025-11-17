@@ -4,8 +4,8 @@ const mongoose = require('mongoose');
 const noteSchema = new mongoose.Schema({
   title: { type: String, required: true },
   body: String,
-  categories: [{ type: String }],
-  tags: [{ type: String }],
+  categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
+  tags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tag' }],
   createdAt: { type: Date, default: Date.now }
 });
 
