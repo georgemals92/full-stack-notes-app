@@ -1,6 +1,7 @@
 // Imports
 import './App.css'
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
+import { Button } from './components/ui/button';
 
 // Service imports
 import { getNotes as apiGetNotes,
@@ -225,7 +226,7 @@ function App() {
           <option value="asc">Ascending</option>
         </select>
 
-        <button onClick={() => loadNotes(buildQuery())} style={{height: '100%', width:'62px', boxSizing: 'border-box', padding:0}}>Apply</button>
+        <Button variant="destructive" onClick={() => loadNotes(buildQuery())}>Apply</Button>
       </div>
 
       <h3 style={{textAlign:'left'}}>Create note</h3>
