@@ -1,12 +1,14 @@
+import { Note, NotePayload } from "../lib/note";
+
 const API_BASE = '/api/notes';
 
-export async function getNotes(query) {
+export async function getNotes(query : string) : Promise<Note[]> {
       const res = await fetch(`${API_BASE}${query}`);
       if (!res.ok) throw new Error('Failed to fetch notes');
       return await res.json();
     } 
 
-export async function createNote(note) {
+export async function createNote(note : NotePayload) : Promise<Note> {
     const res = await fetch(API_BASE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -21,7 +23,7 @@ export async function createNote(note) {
       return await res.json();
 }
 
-export async function updateNote(id, note) {
+export async function updateNote(id : string, note : NotePayload) : Promise<Note> {
     const res = await fetch(`${API_BASE}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -33,7 +35,7 @@ export async function updateNote(id, note) {
     return await res.json();
 }
 
-export async function deleteNote(id) {
+export async function deleteNote(id : string) : Promise<void> {
     const res = await fetch(`/api/notes/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete note');
 }

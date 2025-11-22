@@ -1,6 +1,6 @@
 // Imports
 import './App.css'
-import { useEffect, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 
 // Service imports
 import { getNotes as apiGetNotes,
@@ -11,38 +11,42 @@ import { getNotes as apiGetNotes,
 import { getTags as apiGetTags } from './services/tagService';
 import { getCategories as apiGetCategories} from './services/categoryService'; 
 
+// Import types
+import { EditDraft, Note, NotePayload } from './lib/note';
+import { Tag } from './lib/tag';
+import { Category } from './lib/category';
 
 function App() {
   // General state variables
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   
   // State for master lists
-  const [notes, setNotes] = useState([]);
-  const [allTags, setAllTags] = useState([]);
-  const [allCategories, setAllCategories] = useState([]);
+  const [notes , setNotes] = useState<Note[]>([]);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
 
   // State variables for create and update notes
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
+  const [title, setTitle] = useState<string>('');
+  const [body, setBody] = useState<string>('');
   
   // States for tags and category IDs in create and update note?
-  const [selectedTagIds, setSelectedTagIds] = useState([]);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
 
   // States for ?????
-  const [editSelectedTagIds, setEditSelectedTagIds] = useState([]);
-  const [editSelectedCategoryIds, setEditSelectedCategoryIds] = useState([]);
+  const [editSelectedTagIds, setEditSelectedTagIds] = useState<string[]>([]);
+  const [editSelectedCategoryIds, setEditSelectedCategoryIds] = useState<string[]>([]);
 
   // State for note selected to edit
-  const [editingNote, setEditingNote] = useState(null); // tracks the note being edited
+  const [editingNote, setEditingNote] = useState<EditDraft | null>(null); // tracks the note being edited
   
   //Filtering, search, sorting states
-  const [filterCategories, setFilterCategories] = useState([]);
-  const [filterTags, setFilterTags] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('createdAt'); //default as in API controller
-  const [order, setOrder] = useState('desc'); // default as in API controller 
+  const [filterCategories, setFilterCategories] = useState<string[]>([]);
+  const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortBy, setSortBy] = useState<string>('createdAt'); //default as in API controller
+  const [order, setOrder] = useState<string>('desc'); // default as in API controller 
 
   // Construct query params for notes fetching
   const buildQuery = () => {
@@ -58,7 +62,7 @@ function App() {
   } 
 
   // Helper function to read selected values from <select multiple>
-  const getSelectedValues = (e) => {
+  const getSelectedValues = (e: ChangeEvent<HTMLSelectElement>) => {
     return Array.from(e.target.selectedOptions, o => o.value);
   }
 
@@ -66,10 +70,14 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiGetNotes(query);
+      const data : Note[]= await apiGetNotes(query);
       setNotes(data);
-    } catch (err) {
-      setError(err.message);
+    } catch (err : unknown) {
+      if (err instanceof Error){
+        setError(err.message);
+      } else {
+        setError(String(err));
+      }
     } finally {
       setLoading(false);
       console.log(query); // For testing
@@ -90,7 +98,7 @@ function App() {
     })() //why parenthesis in the end?
   }, []);
 
-  async function handleCreate(e) {
+  async function handleCreate(e : FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!title.trim()) return;
     
@@ -107,18 +115,24 @@ function App() {
       setSelectedCategoryIds([]);
       setSelectedTagIds([]);
     
-    } catch (err) {
-      setError(err.message);
+    } catch (err : unknown) {
+      if (err instanceof Error){
+        setError(err.message);
+      } else {
+        setError(String(err));
+      }
     }
   }
   
-  async function handleUpdate(e) {
+  async function handleUpdate(e : FormEvent<HTMLFormElement>) {
     e.preventDefault();
     try {
+      if (!editingNote) return;
+      
       // Convert comma-separated tags string into an array
-      const payload = {
-        title: editingNote.title,
-        body: editingNote.body,
+      const payload : NotePayload = {
+        title: editingNote.title ,
+        body: editingNote?.body ?? '',
         categories: editSelectedCategoryIds,
         tags: editSelectedTagIds
       };
@@ -135,18 +149,26 @@ function App() {
       setSelectedCategoryIds([]);
       setSelectedTagIds([]);
     
-    } catch (err) {
-      setError(err.message);
+    } catch (err : unknown) {
+      if (err instanceof Error){
+        setError(err.message);
+      } else {
+        setError(String(err));
+      }
     }
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(id : string) {
     if (!confirm('Delete this note?')) return;
     try {
       await apiDeleteNote(id);
       setNotes(prev => prev.filter(n => n._id !== id));
-    } catch (err) {
-      setError(err.message);
+    } catch (err : unknown) {
+      if (err instanceof Error){
+        setError(err.message);
+      } else {
+        setError(String(err));
+      }
     }
   }
 
@@ -219,9 +241,12 @@ function App() {
           />
         </div>
         <div>
+          <label htmlFor="categories-select" style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
+            Categories (multiple selection)
+          </label>
           <select
           multiple
-          placeholder="Categories (multiple selection)"
+          id = "categories-select"
           value={selectedCategoryIds}
           style={{height: '100%', minWidth:140, boxSizing: 'border-box'}}
           onChange={e => setSelectedCategoryIds(getSelectedValues(e))}
@@ -232,9 +257,12 @@ function App() {
           </select>
         </div>
         <div>
+          <label htmlFor="tags-select" style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
+            Tags (multiple selection)
+          </label>
           <select
             multiple
-            placeholder="Tags (multiple selection)"
+            id = "tags-select"
             value={selectedTagIds}
             style={{height: '100%', minWidth:140, boxSizing: 'border-box'}}
             onChange={e => setSelectedTagIds(getSelectedValues(e))}
@@ -275,7 +303,7 @@ function App() {
             {editingNote && editingNote._id === note._id ? (
               <form onSubmit={handleUpdate}>
                 <input
-                  value={editingNote.title}
+                  value={editingNote?.title ?? ''}
                   onChange={e => setEditingNote({ ...editingNote, title: e.target.value })}
                   required
                   style={{ width: '100%', padding: '0.25rem' }}
@@ -303,7 +331,7 @@ function App() {
                   })}
                 </select>
                 <textarea
-                  value={editingNote.body}
+                  value={editingNote?.body ?? ''}
                   onChange={e => setEditingNote({ ...editingNote, body: e.target.value })}
                   style={{ width: '100%', padding: '0.25rem', marginTop: '0.25rem' }}
                 />
@@ -357,5 +385,6 @@ function App() {
     </div>
   );
 }
+
 
 export default App;
