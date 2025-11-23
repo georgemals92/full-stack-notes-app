@@ -15,6 +15,7 @@
     "isolatedModules": true,
     "types": ["node", "vite/client"],
     "baseUrl": ".",
+    "ignoreDeprecations" : "6.0", // for baseUrl not being supported in TS v7.0
     "paths": {
       "@/*": ["./src/*"]
     }
