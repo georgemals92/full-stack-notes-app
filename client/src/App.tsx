@@ -16,8 +16,18 @@ import { getCategories as apiGetCategories} from './services/categoryService';
 import { EditDraft, Note, NotePayload } from './lib/note';
 import { Tag } from './lib/tag';
 import { Category } from './lib/category';
-import { Popover, PopoverContent, PopoverTrigger } from './components/ui/popover';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarProvider, SidebarTrigger } from './components/ui/sidebar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
+import { Input } from './components/ui/input';
+import { Checkbox } from './components/ui/checkbox';
+import { Label } from './components/ui/label';
+import { ScrollArea, ScrollBar } from './components/ui/scroll-area';
+import { Textarea } from './components/ui/textarea';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './components/ui/card';
+import { Badge } from './components/ui/badge';
+import { Filter, FilterIcon, Pen, Trash } from 'lucide-react';
+ 
 
 function App() {
   // General state variables
@@ -177,69 +187,95 @@ function App() {
 
   return (
     <SidebarProvider>
-      <div style={{ minWidth: 500, maxWidth: 800, margin: '2rem auto', fontFamily: 'system-ui, Arial' }}>
-        <h1>Notes</h1>
-        <SidebarTrigger />
+      <div className='flex'>
+        
         {/* Filters, Sorting & Search */}
         <Sidebar>
           <SidebarHeader>
-              <h3>Filters & Search</h3>
+            <h3>Filters & Search</h3>
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
-              <SidebarGroupLabel>Search notes</SidebarGroupLabel>
-                <input
+              <SidebarGroupLabel>Search</SidebarGroupLabel>
+                <Input
                   placeholder="Search..."
                   value={searchQuery}
-                  style={{height: '100%', boxSizing: 'border-box'}}
-                  onChange={e => setSearchQuery(e.target.value)}
-                />
+                  onChange={(e) => setSearchQuery(e.target.value)} //Standard HTML event listener
+                >
+                </Input>
             </SidebarGroup>
             <SidebarGroup>
               <SidebarGroupLabel>Filter by Category</SidebarGroupLabel>
-                <select
-                  multiple
-                  title="Filter by Category"
-                  value={filterCategories}
-                  style={{height: '100%', boxSizing: 'border-box'}}
-                  onChange={e => setFilterCategories(getSelectedValues(e))}
-                >
-                  {allCategories.map((c)=>{
-                    return <option key={c._id} value={c._id}>{c.name}</option>;
-                  })}
-                </select>
+                <ScrollArea className='max-h-40 overflow-y-auto'>
+                  {allCategories.map((c)=>
+                    (
+                    <div key={c._id} className='flex items-center gap-2 h-8'>
+                      <Checkbox 
+                        id={`cat-${c._id}`}
+                        checked={filterCategories.includes(c._id)}
+                        onCheckedChange={(checked) => {
+                          if(checked) {
+                            setFilterCategories([...filterCategories, c._id]);
+                          } else {
+                            setFilterCategories(filterCategories.filter(id => id !== c._id));
+                          }
+                        }}
+                      />
+                      <Label className="cursor-pointer font-normal" htmlFor={`cat-${c._id}`}>
+                        {c.name}
+                      </Label>
+                    </div>))
+                  }
+                </ScrollArea>
               </SidebarGroup>
               <SidebarGroup>
                 <SidebarGroupLabel>Filter by Tag</SidebarGroupLabel>
-                <select
-                  multiple
-                  title="Filter by Tag"
-                  value={filterTags}
-                  style={{height: '100%', boxSizing: 'border-box'}}
-                  onChange={e => setFilterTags(getSelectedValues(e))}
-                >
-                  {allTags.map((t)=>{
-                    return <option key={t._id} value={t._id}>{t.name}</option>;
-                  })}
-                </select>
+                <ScrollArea className='max-h-40 overflow-y-auto'>
+                    {allTags.map((t)=>
+                      (
+                      <div key={t._id} className='flex items-center gap-2 h-8'>
+                        <Checkbox 
+                          id={`tag-${t._id}`}
+                          checked={filterTags.includes(t._id)}
+                          onCheckedChange={(checked) => {
+                            if(checked) {
+                              setFilterTags([...filterTags, t._id]);
+                            } else {
+                              setFilterTags(filterTags.filter(id => id !== t._id));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`tag-${t._id}`} className="cursor-pointer font-normal">
+                          {t.name}
+                        </Label>
+                      </div>))
+                    }
+                </ScrollArea> 
               </SidebarGroup>
-              <SidebarGroup>
+              <SidebarGroup className='w-full'>
                 <SidebarGroupLabel>Sort</SidebarGroupLabel>
-                <select 
+                <Select 
                   value={sortBy} 
-                  style={{height: '100%', boxSizing: 'border-box'}}
-                  onChange={e => setSortBy(e.target.value)}>
-                  <option value="createdAt">Created Date</option>
-                  <option value="title">Title</option>
-                </select>
-
-                <select 
+                  onValueChange={setSortBy}>
+                  <SelectTrigger className='w-full my-1.5'>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="createdAt">Created Date</SelectItem>
+                    <SelectItem value="title">Title</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select 
                   value={order} 
-                  style={{height: '100%', boxSizing: 'border-box'}}
-                  onChange={e => setOrder(e.target.value)}>
-                  <option value="desc">Descending</option>
-                  <option value="asc">Ascending</option>
-                </select>
+                  onValueChange={setOrder}>
+                  <SelectTrigger className='w-full my-1.5'>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="desc">Descending</SelectItem>
+                    <SelectItem value="asc">Ascending</SelectItem>
+                  </SelectContent>
+                </Select>
             </SidebarGroup>
             <SidebarFooter>
               <Button variant="default" onClick={() => loadNotes(buildQuery())}>Apply</Button>
@@ -257,168 +293,258 @@ function App() {
               >Reset Filters</Button>
             </SidebarFooter>
           </SidebarContent>
-        
-        
         </Sidebar>
         
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="default">Create note</Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[350px] flex flex-col">
-            <h3>Create note</h3>
-            {/* Create new note form */}
-            <form onSubmit={handleCreate} className='w-full flex flex-col'>
-              <div>
-                <input
-                  placeholder="Title"
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="categories-select">
-                  Categories (multiple selection)
-                </label>
-                <select
-                multiple
-                id = "categories-select"
-                value={selectedCategoryIds}
-                onChange={e => setSelectedCategoryIds(getSelectedValues(e))}
-                >
-                  {allCategories.map((c)=>{
-                    return <option key={c._id} value={c._id}>{c.name}</option>;
-                  })}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="tags-select">
-                  Tags (multiple selection)
-                </label>
-                <select
-                  multiple
-                  id = "tags-select"
-                  value={selectedTagIds}
-                  onChange={e => setSelectedTagIds(getSelectedValues(e))}
-                >
-                  {allTags.map((t)=>{
-                    return <option key={t._id} value={t._id}>{t.name}</option>;
-                  })}
-                </select>
-                
-              </div>
-              <div style={{ marginTop: '0.5rem' }}>
-                <textarea
-                  placeholder="Body (optional)"
-                  value={body}
-                  onChange={e => setBody(e.target.value)}
-                />
-              </div>
-              <Button type="submit" variant="default">
-                Create
-              </Button>
-            </form>
-          </PopoverContent>
-        </Popover>
-        
-
-        <h3 style={{textAlign:'left'}}>My notes</h3>
-        {loading && <p>Loading...</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {notes.map(note => (
-            
-            <li key={note._id} style={{
-              border: '1px solid #ddd',
-              padding: '0.75rem',
-              marginBottom: '0.5rem',
-              borderRadius: '8px'
-            }}>
-              {/* Inline form to update the note */}
-              {editingNote && editingNote._id === note._id ? (
-                <form onSubmit={handleUpdate}>
-                  <input
-                    value={editingNote?.title ?? ''}
-                    onChange={e => setEditingNote({ ...editingNote, title: e.target.value })}
-                    required
-                    style={{ width: '100%', padding: '0.25rem' }}
-                  />
-                  <select
-                    multiple
-                    title="Categories (multiple selection)"
-                    value={editSelectedCategoryIds}
-                    style={{height: '100%', minWidth:140, boxSizing: 'border-box'}}
-                    onChange={e => setEditSelectedCategoryIds(getSelectedValues(e))}
-                  >
-                    {allCategories.map((c)=>{
-                      return <option key={c._id} value={c._id}>{c.name}</option>;
-                    })}
-                  </select>
-                  <select
-                    multiple
-                    title="Tags (multiple selection)"
-                    value={editSelectedTagIds}
-                    style={{height: '100%', minWidth:140, boxSizing: 'border-box'}}
-                    onChange={e => setEditSelectedTagIds(getSelectedValues(e))}
-                  >
-                    {allTags.map((t)=>{
-                      return <option key={t._id} value={t._id}>{t.name}</option>;
-                    })}
-                  </select>
-                  <textarea
-                    value={editingNote?.body ?? ''}
-                    onChange={e => setEditingNote({ ...editingNote, body: e.target.value })}
-                    style={{ width: '100%', padding: '0.25rem', marginTop: '0.25rem' }}
-                  />
-                  <Button variant="default" type="submit" style={{ marginTop: 6 }}>Save</Button>
-                  <Button variant="ghost" type="button" onClick={() => {
-                    setEditingNote(null);
-                    setEditSelectedCategoryIds([]);
-                    setEditSelectedTagIds([]);
-                    setSelectedCategoryIds([]);
-                    setSelectedTagIds([]);
-                    }} style={{ marginLeft: 6 }}>Cancel</Button>
-                </form>
-              ) : (
-                // Note display when not being updated
-                <>
-                  <strong>{note.title}</strong>
-                  <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
-                    {/* Converts date to date object and handles format */}
-                    {new Date(note.createdAt).toLocaleString()}
-                  </div>
-                  <div style={{ fontSize: 14, marginTop: 6 }}>
-                    {/* Destructures category array elements */}
+        <div className='px-12 py-2 flex flex-col gap-2'>
+          <div className='flex justify-between items-center w-full mt-12 pb-3 px-3 border-b-2'>
+            <h1>Notes</h1>
+            <div className='flex items-center gap-1'>
+              <SidebarTrigger className='h-8 w-8'>
+                <FilterIcon />
+              </SidebarTrigger>
+              
+              <Dialog onOpenChange={(open) => {
+                if (!open) {
+                  setTitle(''); 
+                  setBody('');
+                  setSelectedCategoryIds([]);
+                  setSelectedTagIds([]); 
+                }
+              }}>
+                <DialogTrigger asChild>
+                  <Button variant="default" size="sm">Create note</Button>
+                </DialogTrigger>
+                <DialogContent className="w-[550px] flex flex-col gap-y-4">
+                  <DialogHeader>
+                    <DialogTitle>Create new note</DialogTitle>
+                  </DialogHeader>
+                  {/* Create new note form */}
+                  <form onSubmit={handleCreate} className='w-full flex flex-col gap-y-3'>
+                    <div>
+                      <label className='my-2'>
+                        Title
+                      </label>
+                      <Input
+                        placeholder="Title"
+                        value={title}
+                        onChange={e => setTitle(e.target.value)}
+                        required
+                      >
+                      </Input>
+                    </div>
+                    <div>
+                      <label htmlFor="categories-create-select">
+                        Categories (multiple selection)
+                      </label>
+                      <ScrollArea className=' max-h-40 overflow-y-auto'>
+                        {allCategories.map((c)=>
+                          (
+                          <div key={c._id} className='flex items-center gap-2 h-8'>
+                            <Checkbox 
+                              id={`cat-select-create-${c._id}`}
+                              checked={selectedCategoryIds.includes(c._id)}
+                              onCheckedChange={(checked) => {
+                                if(checked) {
+                                  setSelectedCategoryIds([...selectedCategoryIds, c._id]);
+                                } else {
+                                  setSelectedCategoryIds(selectedCategoryIds.filter(id => id !== c._id));
+                                }
+                              }}
+                            />
+                            <Label className="cursor-pointer font-normal" htmlFor={`cat-select-create-${c._id}`}>
+                              {c.name}
+                            </Label>
+                          </div>))
+                        }
+                      </ScrollArea> 
+                    </div>
+                    <div>
+                      <label htmlFor="tags-create-select">
+                        Tags (multiple selection)
+                      </label>
+                      <ScrollArea className='max-h-40 overflow-y-auto'>
+                          {allTags.map((t)=>
+                            (
+                            <div key={t._id} className='flex items-center gap-2 h-8'>
+                              <Checkbox 
+                                id={`tag-select-create-${t._id}`}
+                                checked={selectedTagIds.includes(t._id)}
+                                onCheckedChange={(checked) => {
+                                  if(checked) {
+                                    setSelectedTagIds([...selectedTagIds, t._id]);
+                                  } else {
+                                    setSelectedTagIds(selectedTagIds.filter(id => id !== t._id));
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`tag-select-create-${t._id}`} className="cursor-pointer font-normal">
+                                {t.name}
+                              </Label>
+                              
+                            </div>))
+                          }
+                      </ScrollArea> 
+                    </div>
+                    <div>
+                      <Textarea
+                        placeholder="Body (optional)"
+                        value={body}
+                        onChange={e => setBody(e.target.value)}
+                      />
+                    </div>
+                    <Button type="submit" variant="default">
+                      Create
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+            {loading && <p>Loading...</p>}
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+          </div>
+          <div className='flex flex-wrap w-full gap-3'>
+            {notes.map(note => (
+              <Card key={note._id} className='py-0 w-70 gap-4'>    
+                <img className="w-full h-30 object-cover rounded-t-xl p-0" src="https://www.notion.so/images/page-cover/webb4.jpg" alt="note image default" />
+                <CardHeader className='py-0 px-4 flex flex-col gap-2'>
+                  <CardTitle className=''>{note.title}</CardTitle>
+                  {/* <div>  
                     {Array.isArray(note.categories) ? note.categories.map(
-                        (c, id) => <span key={id} style={{margin: '0.25rem', padding: 4, backgroundColor:'#f2f2f2', color: '#242424', borderRadius: 4}}>{c.name}</span>) 
+                        (c, id) => <Badge variant="default" key={id} className='mx-0.5'>{c.name}</Badge>) 
                       : note.categories
                     }
-                  </div>
-                  <div style={{ fontSize: 14, marginTop: 6 }}>
-                    {/* Destructures tag array elements */}
+                  </div> */}
+                  <div className='h-10'>
                     {Array.isArray(note.tags) ? note.tags.map(
-                      (t, id) => <span key={id} style={{margin: '0.25rem', padding: 4, backgroundColor:'#f2f2f2', color: '#242424', borderRadius: 4}}>{t.name}</span>) 
+                      (t, id) => <Badge variant="outline" key={id} className='mx-0.5'>{t.name}</Badge>) 
                       : note.tags
                     }
                   </div>
-                  <div style={{ fontSize: 14, marginTop: 6 }}>{note.body}</div>
-                  <div style={{ marginTop: 8 }}>
-                    <Button variant="secondary" onClick={() => {
-                      setEditingNote({_id: note._id, title: note.title, body: note.body});
-                      setEditSelectedCategoryIds(Array.isArray(note.categories) ? note.categories.map(c => String(c._id)) : []);
-                      setEditSelectedTagIds(Array.isArray(note.tags) ? note.tags.map(t => String(t._id)) : []);
+                </CardHeader>
+                <CardContent className='text-sm h-15 overflow-y-hidden'>
+                  {note.body}  
+                </CardContent>
+                <CardFooter className='pt-2 py-4 items-baseline justify-between'>        
+                    <div className='text-xs'>
+                      {/* Converts date to date object and handles format */}
+                      {new Date(note.createdAt).toLocaleString()}
+                    </div>                 
+                    <div className='flex gap-2'>
+                    {/* Dialog to update the note */}
+                    {editingNote && editingNote._id === note._id ? (
+                    
+                      <Dialog open={true} onOpenChange={(open) => {
+                        if (!open) {
+                          setEditingNote(null);
+                          setEditSelectedCategoryIds([]);
+                          setEditSelectedTagIds([]);
+                        }
                       }}>
-                      Edit
+                          <DialogContent className="w-[550px] flex flex-col gap-y-4">
+                            <DialogHeader>
+                              <DialogTitle>Edit note</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleUpdate} className='w-full flex flex-col gap-y-3'>
+                              <div>
+                                <label className='my-4'>
+                                  Title
+                                </label>
+                                <Input
+                                  value={editingNote?.title ?? ''}
+                                  onChange={e => setEditingNote({ ...editingNote, title: e.target.value })}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label htmlFor="categories-edit-select">
+                                  Categories (multiple selection)
+                                </label>
+                                <ScrollArea className='max-h-40 overflow-y-auto'>
+                                  {allCategories.map((c)=>
+                                    (
+                                    <div key={c._id} className='flex items-center gap-2 h-8'>
+                                      <Checkbox 
+                                        id={`cat-select-edit-${c._id}`}
+                                        checked={editSelectedCategoryIds.includes(c._id)}
+                                        onCheckedChange={(checked) => {
+                                          if(checked) {
+                                            setEditSelectedCategoryIds([...editSelectedCategoryIds, c._id]);
+                                          } else {
+                                            setEditSelectedCategoryIds(selectedCategoryIds.filter(id => id !== c._id));
+                                          }
+                                        }}
+                                      />
+                                      <Label className="cursor-pointer font-normal" htmlFor={`cat-select-edit-${c._id}`}>
+                                        {c.name}
+                                      </Label>
+                                    </div>))
+                                  }
+                                  
+                                </ScrollArea> 
+                              </div>
+                              <div>
+                                <label htmlFor="tags-create-select">
+                                Tags (multiple selection)
+                                </label>
+                                <ScrollArea className='max-h-40 overflow-y-auto'>
+                                    {allTags.map((t)=>
+                                      (
+                                      <div key={t._id} className='flex items-center gap-2 h-8'>
+                                        <Checkbox 
+                                          id={`tag-select-edit-${t._id}`}
+                                          checked={editSelectedTagIds.includes(t._id)}
+                                          onCheckedChange={(checked) => {
+                                            if(checked) {
+                                              setEditSelectedTagIds([...editSelectedTagIds, t._id]);
+                                            } else {
+                                              setEditSelectedTagIds(editSelectedTagIds.filter(id => id !== t._id));
+                                            }
+                                          }}
+                                        />
+                                        <Label htmlFor={`tag-select-edit-${t._id}`} className="cursor-pointer font-normal">
+                                          {t.name}
+                                        </Label>
+                                      </div>))
+                                    }
+
+                                </ScrollArea> 
+                              </div>
+                              <div>
+                                <Textarea
+                                  value={editingNote?.body ?? ''}
+                                  onChange={e => setEditingNote({ ...editingNote, body: e.target.value })}
+                                  style={{ width: '100%', padding: '0.25rem', marginTop: '0.25rem' }}
+                                />
+                              </div>      
+                              <Button variant="default" type="submit" >Save</Button>
+                              <Button variant="ghost" type="button" onClick={() => {
+                                setEditingNote(null);
+                                setEditSelectedCategoryIds([]);
+                                setEditSelectedTagIds([]);
+                                }}>Cancel</Button>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+                      ) : (
+                            <Button variant="secondary" onClick={() => {
+                              if(!note._id) {return ;} // To guard against invalid id before setting editing state
+
+                              setEditingNote({_id: note._id, title: note.title, body: note.body});
+                              setEditSelectedCategoryIds(Array.isArray(note.categories) ? note.categories.map(c => String(c._id)) : []);
+                              setEditSelectedTagIds(Array.isArray(note.tags) ? note.tags.map(t => String(t._id)) : []);
+                              }}>
+                              <Pen />
+                            </Button>
+                          )}  
+                    <Button variant="destructive" size='icon-sm' onClick={() => handleDelete(note._id)}>
+                      <Trash />
                     </Button>
-                    <Button variant="destructive" onClick={() => handleDelete(note._id)} style={{ marginLeft: 8 }}>Delete</Button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
+                  </div>            
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     </SidebarProvider>
   );
