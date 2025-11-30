@@ -1,6 +1,9 @@
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+// Import Hooks
+import { FormEvent, useEffect, useState } from "react";
+import { useNoteFilters } from "@/hooks/useNoteFilters";
+import { idleNoteEditor, useNoteEditor } from "@/hooks/useNoteEditor";
 
-// Service imports
+// Import services
 import {
     getNotes as apiGetNotes,
     createNote as apiCreateNote,
@@ -14,15 +17,18 @@ import { getCategories as apiGetCategories } from "../services/categoryService";
 import { Note, NotePayload } from "../lib/note";
 import { Tag } from "../lib/tag";
 import { Category } from "../lib/category";
-import { SidebarProvider, SidebarTrigger } from "../components/ui/sidebar";
 
-import { FilterIcon } from "lucide-react";
+// Import Components
 import FiltersSidebar from "@/components/features/filters/FiltersSidebar";
 import NoteDialog from "@/components/features/notes/NoteDialog";
 import NoteCard from "@/components/features/notes/NoteCard";
+import { SidebarProvider, SidebarTrigger } from "../components/ui/sidebar";
+
+// Import icons
+import { FilterIcon } from "lucide-react";
 
 function NotesPage() {
-    // General state variables
+    // Error states
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -30,34 +36,12 @@ function NotesPage() {
     const [notes, setNotes] = useState<Note[]>([]);
     const [allTags, setAllTags] = useState<Tag[]>([]);
     const [allCategories, setAllCategories] = useState<Category[]>([]);
-
+    const { noteFilters, setNoteFilters, buildQuery, resetFilters } = useNoteFilters(); // UseNoteFilters custom hook consumption
+    const { noteEditor, setNoteEditor, resetNoteEditor } = useNoteEditor();
+    const [mode, setMode] = useState<"create" |"edit">();
+    
     // State variables for create and update notes
-    const [editingNoteId, setEditingNoteId] = useState<string | null>(null); // tracks the note being edited
-    const [title, setTitle] = useState<string>("");
-    const [body, setBody] = useState<string>("");
-    const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-    const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
     const [noteDialogOpen, setNoteDialogOpen] = useState<boolean>(false); // state for edit note modal
-
-    //Filtering, search, sorting states
-    const [filterCategories, setFilterCategories] = useState<string[]>([]);
-    const [filterTags, setFilterTags] = useState<string[]>([]);
-    const [searchQuery, setSearchQuery] = useState<string>("");
-    const [sortBy, setSortBy] = useState<string>("createdAt"); //default as in API controller
-    const [order, setOrder] = useState<string>("desc"); // default as in API controller
-
-    // Construct query params for notes fetching
-    const buildQuery = () => {
-        const params = new URLSearchParams();
-        filterTags.forEach((id) => params.append("tags", id));
-        filterCategories.forEach((id) => params.append("categories", id));
-        params.set("search", searchQuery);
-        params.set("sortBy", sortBy);
-        params.set("order", order);
-        const q = params.toString();
-        console.log(q);
-        return q ? `?${q}` : "";
-    };
 
     async function loadNotes(query = "") {
         setLoading(true);
@@ -96,17 +80,17 @@ function NotesPage() {
 
     async function handleCreate(e: FormEvent<HTMLFormElement>) {
         e.preventDefault();
-        if (!title.trim()) return;
+        if (!noteEditor.title.trim()) return;
 
         try {
             const created = await apiCreateNote({
-                title: title.trim(),
-                body,
-                categories: selectedCategoryIds,
-                tags: selectedTagIds,
+                title: noteEditor.title.trim(),
+                body: noteEditor?.body ?? "",
+                categories: noteEditor?.categories ?? [],
+                tags: noteEditor?.tags ?? [],
             });
             setNotes((prev) => [created, ...prev]);
-            resetEditorState();
+            handleNoteEditorReset();
 
         } catch (err: unknown) {
             if (err instanceof Error) {
@@ -120,23 +104,23 @@ function NotesPage() {
     async function handleUpdate(e: FormEvent<HTMLFormElement>) {
         e.preventDefault();
         try {
-            if (!editingNoteId) return;
+            if (!noteEditor.editingNoteId ) return;
 
             // Convert comma-separated tags string into an array
             const payload: NotePayload = {
-                title: title,
-                body: body ?? "",
-                categories: selectedCategoryIds,
-                tags: selectedTagIds,
+                title: noteEditor.title,
+                body: noteEditor?.body ?? "",
+                categories: noteEditor?.categories ?? [],
+                tags: noteEditor?.tags ?? [],
             };
 
             // Use same payload for the api helper so the update is consistent
-            const updated = await apiUpdateNote(editingNoteId, payload);
+            const updated = await apiUpdateNote(noteEditor.editingNoteId, payload);
             console.log(updated);
             setNotes((prev) =>
                 prev.map((n) => (n._id === updated._id ? updated : n))
             );
-            resetEditorState();
+            handleNoteEditorReset();
 
         } catch (err: unknown) {
             if (err instanceof Error) {
@@ -166,61 +150,41 @@ function NotesPage() {
             return;
         } // To guard against invalid id before setting editing state
         setNoteDialogOpen(true);
-        setEditingNoteId(note._id);
-        setTitle(note.title ?? "");
-        setBody(note.body ?? "");
-        setSelectedCategoryIds(
-            Array.isArray(note.categories)
-                ? note.categories.map((c) => String(c._id))
-                : []
-        );
-        setSelectedTagIds(
-            Array.isArray(note.tags)
-                ? note.tags.map((t) => String(t._id))
-                : []
-        );
+        setNoteEditor({
+            editingNoteId: note._id,
+            title: note.title,
+            body: note.body ?? "",
+            categories: Array.isArray(note.categories)
+                ? note.categories.map((c) => String(c._id)) : [],
+            tags: Array.isArray(note.tags)
+                ? note.tags.map((t) => String(t._id)) : []
+        });
     }
 
-    function resetEditorState() {
-        setEditingNoteId(null);
-        setTitle("");
-        setBody("");
-        setSelectedCategoryIds([]);
-        setSelectedTagIds([]);
+    function handleNoteEditorReset() {
+        resetNoteEditor();
         setNoteDialogOpen(false);
     }
 
-    function resetFilters() {
-        setFilterCategories([]);
-        setFilterTags([]);
-        setSearchQuery("");
-        setSortBy("createdAt");
-        setOrder("desc");
+    function handleResetFilters() {
+        resetFilters();
         loadNotes();
     }
 
-    function applyFilters() {
-        loadNotes(buildQuery());
+    function handleApplyFilters() {
+        loadNotes(buildQuery()); //update?
     }
 
     return (
         <SidebarProvider>
             <div className="flex">
                 <FiltersSidebar
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    allCategories={allCategories}
-                    filterCategories={filterCategories}
-                    setFilterCategories={setFilterCategories}
                     allTags={allTags}
-                    filterTags={filterTags}
-                    setFilterTags={setFilterTags}
-                    order={order}
-                    setOrder={setOrder}
-                    sortBy={sortBy}
-                    setSortBy={setSortBy}
-                    onFiltersReset={resetFilters}
-                    onFiltersApply={applyFilters}
+                    allCategories={allCategories}
+                    noteFilters={noteFilters}
+                    setNoteFilters={setNoteFilters}
+                    onFiltersReset={handleResetFilters}
+                    onFiltersApply={handleApplyFilters}
                 />
 
                 <div className="px-12 py-2 flex flex-col gap-2">
@@ -231,22 +195,14 @@ function NotesPage() {
                                 <FilterIcon />
                             </SidebarTrigger>
                             <NoteDialog
-                                mode={editingNoteId ? "edit" : "create"}
-                                noteDialogOpen={noteDialogOpen}
-                                title={title}
-                                body={body}
                                 allCategories={allCategories}
-                                selectedCategoryIds={selectedCategoryIds}
                                 allTags={allTags}
-                                selectedTagIds={selectedTagIds}
-                                setTitle={setTitle}
-                                setBody={setBody}
-                                setSelectedCategoryIds={setSelectedCategoryIds}
-                                setSelectedTagIds={setSelectedTagIds}
+                                noteDialogOpen={noteDialogOpen}
                                 setNoteDialogOpen={setNoteDialogOpen}
-                                onSubmit={editingNoteId ? handleUpdate : handleCreate}
-                                editingNoteId={editingNoteId}
-                                setEditingNoteId={setEditingNoteId}
+                                mode={noteEditor.editingNoteId ? "edit" : "create"}
+                                noteEditor={noteEditor}
+                                setNoteEditor={setNoteEditor}
+                                onSubmit={noteEditor.editingNoteId ? handleUpdate : handleCreate}
                             />
                         </div>
                         {loading && <p>Loading...</p>}
@@ -255,6 +211,7 @@ function NotesPage() {
                     <div className="flex flex-wrap w-full gap-3">
                         {notes.map((note) => (
                             <NoteCard 
+                                key={note._id}
                                 note={note}
                                 onEdit={onNoteEdit}
                                 onDelete={handleDelete}

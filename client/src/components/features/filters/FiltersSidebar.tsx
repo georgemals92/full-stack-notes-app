@@ -17,28 +17,21 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Category } from "@/lib/category";
 import { Tag } from "@/lib/tag";
+import { NoteFilterState } from "@/hooks/useNoteFilters";
 
 // Props schema
 interface FiltersSidebarProps {
-  searchQuery: string;
-  setSearchQuery(q: string): void;
-  allCategories: Category[];
-  filterCategories: string[];
-  setFilterCategories(c: string[]): void;
   allTags: Tag[];
-  filterTags: string[];
-  setFilterTags(t: string[]): void;
-  order: string;
-  setOrder(o: string): void;
-  sortBy: string;
-  setSortBy(s: string): void;
+  allCategories: Category[];
+  noteFilters: NoteFilterState;
+  setNoteFilters(f: NoteFilterState): void; 
   onFiltersReset() : void;
   onFiltersApply() : void;
 }
 
 // Filters Sidebar Component
 
-function FiltersSidebar(props: FiltersSidebarProps) {
+function FiltersSidebar({noteFilters, setNoteFilters, allCategories, allTags, onFiltersApply, onFiltersReset}: FiltersSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader>
@@ -49,28 +42,28 @@ function FiltersSidebar(props: FiltersSidebarProps) {
           <SidebarGroupLabel>Search</SidebarGroupLabel>
           <Input
             placeholder="Search..."
-            value={props.searchQuery}
+            value={noteFilters.search}
             id="search"
-            onChange={(e) => props.setSearchQuery(e.target.value)} //Standard HTML event listener
+            onChange={(e) => setNoteFilters({...noteFilters, search: e.target.value})} //Standard HTML event listener
           ></Input>
         </SidebarGroup>
         <SidebarGroup>
           <SidebarGroupLabel>Filter by Category</SidebarGroupLabel>
           <ScrollArea className="max-h-40 overflow-y-auto">
-            {props.allCategories.map((c) => (
+            {allCategories.map((c) => (
               <div key={c._id} className="flex items-center gap-2 h-8">
                 <Checkbox
                   id={`cat-${c._id}`}
-                  checked={props.filterCategories.includes(c._id)}
+                  checked={noteFilters.categories.includes(c._id)}
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      props.setFilterCategories([
-                        ...props.filterCategories,
+                      setNoteFilters({...noteFilters, categories: [
+                        ...noteFilters.categories,
                         c._id,
-                      ]);
+                      ]});
                     } else {
-                      props.setFilterCategories(
-                        props.filterCategories.filter((id) => id !== c._id)
+                      setNoteFilters(
+                        {...noteFilters, categories: noteFilters.categories.filter((id) => id !== c._id)}
                       );
                     }
                   }}
@@ -88,17 +81,20 @@ function FiltersSidebar(props: FiltersSidebarProps) {
         <SidebarGroup>
           <SidebarGroupLabel>Filter by Tag</SidebarGroupLabel>
           <ScrollArea className="max-h-40 overflow-y-auto">
-            {props.allTags.map((t) => (
+            {allTags.map((t) => (
               <div key={t._id} className="flex items-center gap-2 h-8">
                 <Checkbox
                   id={`tag-${t._id}`}
-                  checked={props.filterTags.includes(t._id)}
+                  checked={noteFilters.tags.includes(t._id)}
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      props.setFilterTags([...props.filterTags, t._id]);
+                      setNoteFilters({...noteFilters, tags: [
+                        ...noteFilters.tags,
+                        t._id,
+                      ]});
                     } else {
-                      props.setFilterTags(
-                        props.filterTags.filter((id) => id !== t._id)
+                      setNoteFilters(
+                        {...noteFilters, tags: noteFilters.tags.filter((id) => id !== t._id)}
                       );
                     }
                   }}
@@ -115,7 +111,7 @@ function FiltersSidebar(props: FiltersSidebarProps) {
         </SidebarGroup>
         <SidebarGroup className="w-full">
           <SidebarGroupLabel>Sort</SidebarGroupLabel>
-          <Select value={props.sortBy} onValueChange={props.setSortBy}>
+          <Select value={noteFilters.sortBy} onValueChange={(v) => setNoteFilters({...noteFilters, sortBy: v})}>
             <SelectTrigger className="w-full my-1.5">
               <SelectValue />
             </SelectTrigger>
@@ -124,7 +120,7 @@ function FiltersSidebar(props: FiltersSidebarProps) {
               <SelectItem value="title">Title</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={props.order} onValueChange={props.setOrder}>
+          <Select value={noteFilters.order} onValueChange={(v) => setNoteFilters({...noteFilters, order: v})}>
             <SelectTrigger className="w-full my-1.5">
               <SelectValue />
             </SelectTrigger>
@@ -135,16 +131,12 @@ function FiltersSidebar(props: FiltersSidebarProps) {
           </Select>
         </SidebarGroup>
         <SidebarFooter>
-          <Button variant="default" onClick={props.onFiltersApply}>
+          <Button variant="default" onClick={onFiltersApply}>
             Apply
           </Button>
           <Button
             variant="secondary"
-            onClick={props.onFiltersReset
-              // To check: Here we call the loadNote function without accounting for state, might lead to inconsistency.
-              // If we call loadNotes(buildQuery()) it takes two clicks to reset
-              // Thought: might need to add the filters as a dependency in useEffect Hook? --> currently called only during initial render
-            }
+            onClick={onFiltersReset}
           >
             Reset Filters
           </Button>
