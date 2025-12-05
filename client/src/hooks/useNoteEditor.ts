@@ -1,3 +1,4 @@
+import { Note } from "@/lib/note";
 import { useState } from "react";
 
 export type NoteEditorState = 
@@ -19,14 +20,40 @@ export const idleNoteEditor : NoteEditorState = {
 
 export function useNoteEditor() {
     const [ noteEditor, setNoteEditor ] = useState<NoteEditorState>(idleNoteEditor);
+    const [noteDialogOpen, setNoteDialogOpen] = useState<boolean>(false);
 
-    function resetNoteEditor() {
+    function onNoteEditorReset() {
             setNoteEditor(idleNoteEditor);
+            setNoteDialogOpen(false);
         }
+
+    function onNoteEditorStart(note: Note) : void {
+        if (!note._id) {
+            return;
+        } // To guard against invalid id before setting editing state
+        setNoteEditor({
+            editingNoteId: note._id,
+            title: note.title,
+            body: note.body ?? "",
+            categories: Array.isArray(note.categories)
+                ? note.categories.map((c) => String(c._id)) : [],
+            tags: Array.isArray(note.tags)
+                ? note.tags.map((t) => String(t._id)) : []
+        });
+        setNoteDialogOpen(true);
+    }
+        function onNoteCreateStart() : void {
+        setNoteEditor(idleNoteEditor);
+        setNoteDialogOpen(true);
+    }
 
     return {
         noteEditor,
         setNoteEditor,
-        resetNoteEditor
+        onNoteEditorReset,
+        onNoteEditorStart,
+        onNoteCreateStart,
+        noteDialogOpen,
+        setNoteDialogOpen,
     };
 }

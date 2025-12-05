@@ -1,7 +1,7 @@
 // Import Hooks
 import { FormEvent, useEffect, useState } from "react";
 import { useNoteFilters } from "@/hooks/useNoteFilters";
-import { idleNoteEditor, useNoteEditor } from "@/hooks/useNoteEditor";
+import { useNoteEditor } from "@/hooks/useNoteEditor";
 
 // Import services
 import {
@@ -18,30 +18,41 @@ import { Note, NotePayload } from "../lib/note";
 import { Tag } from "../lib/tag";
 import { Category } from "../lib/category";
 
-// Import Components
+// Import Layouts & Components
+import PageLayout from "@/components/layouts/PageLayout";
 import FiltersSidebar from "@/components/features/filters/FiltersSidebar";
 import NoteDialog from "@/components/features/notes/NoteDialog";
 import NoteCard from "@/components/features/notes/NoteCard";
-import { SidebarProvider, SidebarTrigger } from "../components/ui/sidebar";
 
 // Import icons
-import { FilterIcon } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Notebook, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 function NotesPage() {
-    // Error states
+    // State
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
-
-    // State for master lists
     const [notes, setNotes] = useState<Note[]>([]);
     const [allTags, setAllTags] = useState<Tag[]>([]);
     const [allCategories, setAllCategories] = useState<Category[]>([]);
-    const { noteFilters, setNoteFilters, buildQuery, resetFilters } = useNoteFilters(); // UseNoteFilters custom hook consumption
-    const { noteEditor, setNoteEditor, resetNoteEditor } = useNoteEditor();
-    const [mode, setMode] = useState<"create" |"edit">();
-    
-    // State variables for create and update notes
-    const [noteDialogOpen, setNoteDialogOpen] = useState<boolean>(false); // state for edit note modal
+    const { 
+        noteFilters,
+        setNoteFilters,
+        buildQuery,
+        resetFilters
+    } = useNoteFilters(); // UseNoteFilters custom hook consumption
+    const {
+        noteEditor,
+        setNoteEditor,
+        noteDialogOpen,
+        setNoteDialogOpen,
+        onNoteCreateStart,
+        onNoteEditorReset,
+        onNoteEditorStart,
+    } = useNoteEditor();
 
     async function loadNotes(query = "") {
         setLoading(true);
@@ -56,7 +67,8 @@ function NotesPage() {
                 setError(String(err));
             }
         } finally {
-            setLoading(false);
+            setTimeout(() => {setLoading(false);}, 500) //For testing
+            // setLoading(false);
             console.log(query); // For testing
         }
     }
@@ -90,13 +102,17 @@ function NotesPage() {
                 tags: noteEditor?.tags ?? [],
             });
             setNotes((prev) => [created, ...prev]);
-            handleNoteEditorReset();
+            toast.success("Note was successfully created.");
+            onNoteEditorReset();
+            handleResetFilters();
 
         } catch (err: unknown) {
             if (err instanceof Error) {
                 setError(err.message);
+                toast.error("An error occured during the note creation.");
             } else {
                 setError(String(err));
+                toast.error("An error occured during the note creation.");
             }
         }
     }
@@ -116,54 +132,36 @@ function NotesPage() {
 
             // Use same payload for the api helper so the update is consistent
             const updated = await apiUpdateNote(noteEditor.editingNoteId, payload);
+            onNoteEditorReset();
+            handleApplyFilters(); 
+            toast.success("Note was successfully updated.");
             console.log(updated);
-            setNotes((prev) =>
-                prev.map((n) => (n._id === updated._id ? updated : n))
-            );
-            handleNoteEditorReset();
 
         } catch (err: unknown) {
             if (err instanceof Error) {
                 setError(err.message);
+                toast.error("An error occured during the note update.");
             } else {
                 setError(String(err));
+                toast.error("An error occured during the note update.");
             }
         }
     }
 
     async function handleDelete(id: string) {
-        if (!confirm("Delete this note?")) return;
         try {
             await apiDeleteNote(id);
-            setNotes((prev) => prev.filter((n) => n._id !== id));
+            handleApplyFilters();
+            toast.success("Note was successfully deleted.");
         } catch (err: unknown) {
             if (err instanceof Error) {
                 setError(err.message);
+                toast.error("An error occured during the note deletion.");
             } else {
                 setError(String(err));
+                toast.error("An error occured during the note deletion.");
             }
         }
-    }
-
-    function onNoteEdit(note: Note) : void {
-        if (!note._id) {
-            return;
-        } // To guard against invalid id before setting editing state
-        setNoteDialogOpen(true);
-        setNoteEditor({
-            editingNoteId: note._id,
-            title: note.title,
-            body: note.body ?? "",
-            categories: Array.isArray(note.categories)
-                ? note.categories.map((c) => String(c._id)) : [],
-            tags: Array.isArray(note.tags)
-                ? note.tags.map((t) => String(t._id)) : []
-        });
-    }
-
-    function handleNoteEditorReset() {
-        resetNoteEditor();
-        setNoteDialogOpen(false);
     }
 
     function handleResetFilters() {
@@ -175,52 +173,101 @@ function NotesPage() {
         loadNotes(buildQuery()); //update?
     }
 
-    return (
-        <SidebarProvider>
-            <div className="flex">
-                <FiltersSidebar
-                    allTags={allTags}
-                    allCategories={allCategories}
-                    noteFilters={noteFilters}
-                    setNoteFilters={setNoteFilters}
-                    onFiltersReset={handleResetFilters}
-                    onFiltersApply={handleApplyFilters}
-                />
+    const header = (
+        <Button
+            variant="default"
+            size="default"
+            onClick={onNoteCreateStart}
+        >
+            <Plus/>
+            Create note
+        </Button>
+    );
 
-                <div className="px-12 py-2 flex flex-col gap-2">
-                    <div className="flex justify-between items-center w-full mt-12 pb-3 px-3 border-b-2">
-                        <h1>Notes</h1>
-                        <div className="flex items-center gap-1">
-                            <SidebarTrigger className="h-8 w-8">
-                                <FilterIcon />
-                            </SidebarTrigger>
-                            <NoteDialog
-                                allCategories={allCategories}
-                                allTags={allTags}
-                                noteDialogOpen={noteDialogOpen}
-                                setNoteDialogOpen={setNoteDialogOpen}
-                                mode={noteEditor.editingNoteId ? "edit" : "create"}
-                                noteEditor={noteEditor}
-                                setNoteEditor={setNoteEditor}
-                                onSubmit={noteEditor.editingNoteId ? handleUpdate : handleCreate}
-                            />
-                        </div>
-                        {loading && <p>Loading...</p>}
-                        {error && <p style={{ color: "red" }}>{error}</p>}
-                    </div>
-                    <div className="flex flex-wrap w-full gap-3">
-                        {notes.map((note) => (
-                            <NoteCard 
-                                key={note._id}
-                                note={note}
-                                onEdit={onNoteEdit}
-                                onDelete={handleDelete}
-                            /> 
-                        ))}
-                    </div>
-                </div>
+    const sidebar = (
+        <FiltersSidebar
+            allTags={allTags}
+            allCategories={allCategories}
+            noteFilters={noteFilters}
+            setNoteFilters={setNoteFilters}
+            onFiltersReset={handleResetFilters}
+            onFiltersApply={handleApplyFilters}
+        />
+    );
+
+    const skeletonList = loading && (Array.from({ length: 8 }, (_, i) => (
+        <div key={i} className="flex flex-col space-y-3 gap-4">
+            <Skeleton className="h-65 rounded-xl" />
+            <div className="space-y-2">
+                <Skeleton className="h-4 w-[250px]" />
+                <Skeleton className="h-4 w-[200px]" />
             </div>
-        </SidebarProvider>
+        </div>
+    )));
+
+    const emptyState = notes.length === 0 && (
+        <Empty>
+            <EmptyHeader>
+                <EmptyMedia>
+                    <Notebook className="size-20"/>
+                </EmptyMedia>
+                <EmptyTitle>No notes match your search!</EmptyTitle>
+                <EmptyDescription>
+                    Create a new note or reset your search.
+                </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent className="flex flex-row justify-center w-full gap-3">
+                <Button
+                    variant="default"
+                    size="default"
+                    onClick={onNoteCreateStart}
+                >
+                    Create note
+                </Button>
+                <Button
+                    variant="outline"
+                    size="default"
+                    onClick={handleResetFilters}
+                >
+                    Reset filters
+                </Button>
+            </EmptyContent>
+        </Empty>
+    );
+
+    const pageContent = notes.length > 0 && (
+        notes.map((note) => (
+            <NoteCard 
+                key={note._id}
+                note={note}
+                onEdit={onNoteEditorStart}
+                onDelete={handleDelete}
+            /> 
+        ))
+    );
+
+    return (
+        <>
+        <PageLayout 
+            sidebar={sidebar}
+            title="Notes" 
+            header={header}
+            empty={emptyState}
+            pageContent={pageContent}
+            loading={skeletonList}
+        >
+        </PageLayout>
+        <NoteDialog
+            allCategories={allCategories}
+            allTags={allTags}
+            noteDialogOpen={noteDialogOpen}
+            setNoteDialogOpen={setNoteDialogOpen}
+            mode={noteEditor.editingNoteId ? "edit" : "create"}
+            noteEditor={noteEditor}
+            setNoteEditor={setNoteEditor}
+            onSubmit={noteEditor.editingNoteId ? handleUpdate : handleCreate}
+        />
+        </>
     );
 }
 

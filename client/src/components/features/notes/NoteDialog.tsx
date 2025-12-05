@@ -12,14 +12,14 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { idleNoteEditor, NoteEditorState } from "@/hooks/useNoteEditor";
-import { Category } from "@/lib/category";
-import { Tag } from "@/lib/tag";
 import { FormEvent } from "react";
+import { Tag } from "@/lib/tag";
+import { Category } from "@/lib/category";
 
 interface NoteDialogProps {
   noteEditor: NoteEditorState;
-  setNoteEditor(e: NoteEditorState): void;  
-  mode: "create" | "edit" ;
+  setNoteEditor(e: NoteEditorState): void;
+  mode: "create" | "edit";
   allTags: Tag[];
   allCategories: Category[];
   noteDialogOpen: boolean;
@@ -27,7 +27,7 @@ interface NoteDialogProps {
   onSubmit(e: FormEvent<HTMLFormElement>): Promise<void>;
 }
 
-function NoteDialog({noteEditor, setNoteEditor, ...props}: NoteDialogProps) {
+function NoteDialog({ noteEditor, setNoteEditor, ...props }: NoteDialogProps) {
   return (
     <Dialog
       open={props.noteDialogOpen}
@@ -39,13 +39,6 @@ function NoteDialog({noteEditor, setNoteEditor, ...props}: NoteDialogProps) {
         }
       }}
     >
-      <DialogTrigger asChild>
-        {props.mode === "create" && (
-          <Button variant="default" size="sm">
-            Create note
-          </Button>
-        )}
-      </DialogTrigger>
       <DialogContent className="w-[550px] flex flex-col gap-y-4">
         <DialogHeader>
           <DialogTitle>
@@ -65,7 +58,9 @@ function NoteDialog({noteEditor, setNoteEditor, ...props}: NoteDialogProps) {
             <Input
               id={`title-${props.mode}`} //check
               value={noteEditor.title ?? ""}
-              onChange={(e) => setNoteEditor({...noteEditor, title: e.target.value})}
+              onChange={(e) =>
+                setNoteEditor({ ...noteEditor, title: e.target.value })
+              }
               required
             ></Input>
           </div>
@@ -79,20 +74,23 @@ function NoteDialog({noteEditor, setNoteEditor, ...props}: NoteDialogProps) {
                     checked={noteEditor.categories.includes(c._id)}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setNoteEditor({...noteEditor, categories: [
-                          ...noteEditor.categories,
-                          c._id,
-                        ]});
+                        setNoteEditor({
+                          ...noteEditor,
+                          categories: [...noteEditor.categories, c._id],
+                        });
                       } else {
-                        setNoteEditor({ ...noteEditor,
-                          categories: noteEditor.categories.filter((id : string) => id !== c._id)
+                        setNoteEditor({
+                          ...noteEditor,
+                          categories: noteEditor.categories.filter(
+                            (id: string) => id !== c._id
+                          ),
                         });
                       }
                     }}
                   />
                   <Label
                     className="cursor-pointer font-normal"
-                    htmlFor={`cat-select-${props.mode}-${c._id}` } //check
+                    htmlFor={`cat-select-${props.mode}-${c._id}`} //check
                   >
                     {c.name}
                   </Label>
@@ -110,13 +108,16 @@ function NoteDialog({noteEditor, setNoteEditor, ...props}: NoteDialogProps) {
                     checked={noteEditor.tags.includes(t._id)}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setNoteEditor({...noteEditor, tags: [
-                          ...noteEditor.tags,
-                          t._id,
-                        ]});
+                        setNoteEditor({
+                          ...noteEditor,
+                          tags: [...noteEditor.tags, t._id],
+                        });
                       } else {
-                        setNoteEditor({ ...noteEditor, tags:
-                          noteEditor.tags.filter((id: string) => id !== t._id)
+                        setNoteEditor({
+                          ...noteEditor,
+                          tags: noteEditor.tags.filter(
+                            (id: string) => id !== t._id
+                          ),
                         });
                       }
                     }}
@@ -136,7 +137,9 @@ function NoteDialog({noteEditor, setNoteEditor, ...props}: NoteDialogProps) {
               placeholder="Body (optional)"
               value={noteEditor.body}
               id={`${props.mode}-body`} // check
-              onChange={(e) => setNoteEditor({...noteEditor, body: e.target.value})}
+              onChange={(e) =>
+                setNoteEditor({ ...noteEditor, body: e.target.value })
+              }
             />
           </div>
           <Button type="submit" variant="default">
