@@ -5,16 +5,24 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { idleNoteEditor, NoteEditorState } from "@/hooks/useNoteEditor";
+import { 
+  idleNoteEditor,
+  NoteEditorState
+} from "@/hooks/useNoteEditor";
 import { FormEvent } from "react";
 import { Tag } from "@/lib/tag";
 import { Category } from "@/lib/category";
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field";
 
 interface NoteDialogProps {
   noteEditor: NoteEditorState;
@@ -45,16 +53,14 @@ function NoteDialog({ noteEditor, setNoteEditor, ...props }: NoteDialogProps) {
             {props.mode === "create" ? "Create note" : "Edit note"}
           </DialogTitle>
         </DialogHeader>
-        {/* Create new note form */}
         <form
           onSubmit={props.onSubmit}
           className="w-full flex flex-col gap-y-3"
         >
-          <div>
-            {/* check */}
-            <Label className="my-2" htmlFor={`title-${props.mode}`}>
+          <Field>
+            <FieldLabel className="my-2" htmlFor={`title-${props.mode}`}>
               Title
-            </Label>
+            </FieldLabel>
             <Input
               id={`title-${props.mode}`} //check
               value={noteEditor.title ?? ""}
@@ -63,85 +69,94 @@ function NoteDialog({ noteEditor, setNoteEditor, ...props }: NoteDialogProps) {
               }
               required
             ></Input>
-          </div>
-          <div>
-            <Label>Categories (multiple selection)</Label>
+          </Field>
+          <FieldSet>
             <ScrollArea className=" max-h-40 overflow-y-auto">
-              {props.allCategories.map((c) => (
-                <div key={c._id} className="flex items-center gap-2 h-8">
-                  <Checkbox
-                    id={`cat-select-${props.mode}-${c._id}`} //check
-                    checked={noteEditor.categories.includes(c._id)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setNoteEditor({
-                          ...noteEditor,
-                          categories: [...noteEditor.categories, c._id],
-                        });
-                      } else {
-                        setNoteEditor({
-                          ...noteEditor,
-                          categories: noteEditor.categories.filter(
-                            (id: string) => id !== c._id
-                          ),
-                        });
-                      }
-                    }}
-                  />
-                  <Label
-                    className="cursor-pointer font-normal"
-                    htmlFor={`cat-select-${props.mode}-${c._id}`} //check
-                  >
-                    {c.name}
-                  </Label>
-                </div>
-              ))}
+              <FieldGroup className="gap-3">
+                <FieldLegend variant="label">
+                  Categories (multiple selection)
+                </FieldLegend>
+                {props.allCategories.map((c) => (
+                  <Field key={c._id} orientation="horizontal" className="">
+                    <Checkbox
+                      id={`cat-select-${props.mode}-${c._id}`} //check
+                      checked={noteEditor.categories.includes(c._id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setNoteEditor({
+                            ...noteEditor,
+                            categories: [...noteEditor.categories, c._id],
+                          });
+                        } else {
+                          setNoteEditor({
+                            ...noteEditor,
+                            categories: noteEditor.categories.filter(
+                              (id: string) => id !== c._id
+                            ),
+                          });
+                        }
+                      }}
+                    />
+                    <FieldLabel
+                      className="cursor-pointer font-normal"
+                      htmlFor={`cat-select-${props.mode}-${c._id}`} //check
+                    >
+                      {c.name}
+                    </FieldLabel>
+                  </Field>
+                ))}
+              </FieldGroup>
             </ScrollArea>
-          </div>
-          <div>
-            <Label>Tags (multiple selection)</Label>
+          </FieldSet>
+          <FieldSet>
+            <FieldLegend variant="label">Tags (multiple selection)</FieldLegend>
             <ScrollArea className="max-h-40 overflow-y-auto">
-              {props.allTags.map((t) => (
-                <div key={t._id} className="flex items-center gap-2 h-8">
-                  <Checkbox
-                    id={`tag-select-${props.mode}-${t._id}`} //check
-                    checked={noteEditor.tags.includes(t._id)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setNoteEditor({
-                          ...noteEditor,
-                          tags: [...noteEditor.tags, t._id],
-                        });
-                      } else {
-                        setNoteEditor({
-                          ...noteEditor,
-                          tags: noteEditor.tags.filter(
-                            (id: string) => id !== t._id
-                          ),
-                        });
-                      }
-                    }}
-                  />
-                  <Label
-                    htmlFor={`tag-select-${props.mode}-${t._id}`} //check
-                    className="cursor-pointer font-normal"
-                  >
-                    {t.name}
-                  </Label>
-                </div>
-              ))}
+              <FieldGroup className="gap-3">
+                {props.allTags.map((t) => (
+                  <Field key={t._id} orientation="horizontal">
+                    <Checkbox
+                      id={`tag-select-${props.mode}-${t._id}`} //check
+                      checked={noteEditor.tags.includes(t._id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setNoteEditor({
+                            ...noteEditor,
+                            tags: [...noteEditor.tags, t._id],
+                          });
+                        } else {
+                          setNoteEditor({
+                            ...noteEditor,
+                            tags: noteEditor.tags.filter(
+                              (id: string) => id !== t._id
+                            ),
+                          });
+                        }
+                      }}
+                    />
+                    <FieldLabel
+                      htmlFor={`tag-select-${props.mode}-${t._id}`} //check
+                      className="cursor-pointer font-normal"
+                    >
+                      {t.name}
+                    </FieldLabel>
+                  </Field>
+                ))}
+              </FieldGroup>
             </ScrollArea>
-          </div>
-          <div>
+          </FieldSet>
+          <Field>
+            <FieldLabel htmlFor={`${props.mode}-body`}>
+              Body
+            </FieldLabel>
             <Textarea
-              placeholder="Body (optional)"
+              placeholder="Start typing your note"
               value={noteEditor.body}
-              id={`${props.mode}-body`} // check
+              id={`${props.mode}-body`}
               onChange={(e) =>
                 setNoteEditor({ ...noteEditor, body: e.target.value })
               }
             />
-          </div>
+          </Field>
           <Button type="submit" variant="default">
             Save
           </Button>
@@ -149,7 +164,7 @@ function NoteDialog({ noteEditor, setNoteEditor, ...props }: NoteDialogProps) {
             variant="ghost"
             type="button"
             onClick={() => {
-              setNoteEditor(idleNoteEditor); //check
+              setNoteEditor(idleNoteEditor);
               props.setNoteDialogOpen(false);
             }}
           >

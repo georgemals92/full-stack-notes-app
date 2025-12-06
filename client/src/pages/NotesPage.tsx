@@ -67,8 +67,7 @@ function NotesPage() {
                 setError(String(err));
             }
         } finally {
-            setTimeout(() => {setLoading(false);}, 500) //For testing
-            // setLoading(false);
+            setTimeout(() => {setLoading(false);}, 275) //For testing
             console.log(query); // For testing
         }
     }
@@ -87,8 +86,8 @@ function NotesPage() {
             } finally {
                 loadNotes(); //loadNotes(buildQuery()); -> check
             }
-        })(); //why parenthesis in the end?
-    }, []);
+        })(); // Async function to invoked immediately after effect runs (parentheses at the end)
+    }, []); // Check dependency array - filter change should trigger re-renders, ...
 
     async function handleCreate(e: FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -101,7 +100,6 @@ function NotesPage() {
                 categories: noteEditor?.categories ?? [],
                 tags: noteEditor?.tags ?? [],
             });
-            setNotes((prev) => [created, ...prev]);
             toast.success("Note was successfully created.");
             onNoteEditorReset();
             handleResetFilters();
