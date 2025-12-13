@@ -33,7 +33,7 @@ import { Button } from "@/components/ui/button";
 
 function NotesPage() {
     // State
-    const [loading, setLoading] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
     const [allTags, setAllTags] = useState<Tag[]>([]);
@@ -193,7 +193,7 @@ function NotesPage() {
         />
     );
 
-    const skeletonList = loading && (Array.from({ length: 8 }, (_, i) => (
+    const skeletonList = loading ? (Array.from({ length: 8 }, (_, i) => (
         <div key={i} className="flex flex-col space-y-3 gap-4">
             <Skeleton className="h-65 rounded-xl" />
             <div className="space-y-2">
@@ -201,7 +201,7 @@ function NotesPage() {
                 <Skeleton className="h-4 w-[200px]" />
             </div>
         </div>
-    )));
+    ))) : null;
 
     const emptyState = notes.length === 0 && (
         <Empty>
