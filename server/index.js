@@ -1,18 +1,18 @@
-const path = require('path');
+const path = require("path");
 // Use dotenv-safe to enforce required environment variables defined in .env.example
 // This will throw and exit if required vars are missing from .env or the environment.
-require('dotenv-safe').config({
-  example: path.join(__dirname, '..', '.env.example'),
-  path: path.join(__dirname, '..', '.env.example')
+require("dotenv-safe").config({
+  example: path.join(__dirname, "..", ".env.example"),
+  path: path.join(__dirname, "..", ".env"),
 });
 
-const express = require('express');
-const cors = require('cors');
-const connectDB = require('./config/db');
-const noteRoutes = require('./routes/noteRoutes');
-const tagRoutes = require('./routes/tagRoutes');
-const categoryRoutes = require('./routes/categoryRoutes');
-
+const express = require("express");
+const cors = require("cors");
+const connectDB = require("./config/db");
+const userRoutes = require("./routes/userRoutes");
+const noteRoutes = require("./routes/noteRoutes");
+const tagRoutes = require("./routes/tagRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
 
 const app = express();
 app.use(cors());
@@ -25,12 +25,12 @@ const MONGO_URI = process.env.MONGO_URI;
 // Connect with mongo DB
 connectDB(MONGO_URI);
 
-// Routes - Notes
-app.use('/api/notes', noteRoutes);
-app.use('/api/tags', tagRoutes);
-app.use('/api/categories', categoryRoutes);
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
-
+// API Routes
+app.use("/api/users", userRoutes);
+app.use("/api/notes", noteRoutes);
+app.use("/api/tags", tagRoutes);
+app.use("/api/categories", categoryRoutes);
+app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);

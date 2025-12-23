@@ -164,8 +164,8 @@ function NoteDialog({ noteEditor, setNoteEditor, ...props }: NoteDialogProps) {
             variant="ghost"
             type="button"
             onClick={() => {
-              setNoteEditor(idleNoteEditor);
               props.setNoteDialogOpen(false);
+              setNoteEditor(idleNoteEditor);
             }}
           >
             Cancel
