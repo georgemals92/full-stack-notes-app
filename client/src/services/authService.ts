@@ -9,21 +9,21 @@ export interface AuthResponse {
     role: string;
   };
 }
-// Base API URL - see server/router/userRoutes.js
-const API_BASE = "/api/users";
 
-/**
- * 
- * @param payload 
- * @returns 
- */
-export async function registerUser(payload: {
+export type RegisterUserPayload = {
   email: string;
   username: string;
   password: string;
   name: string;
   role: "user" | "admin";
-}): Promise<AuthResponse> {
+};
+
+export type LoginUserPayload = { password: string } & ({ email: string } | { username: string });
+
+// Base API URL - see server/router/userRoutes.js
+const API_BASE = "/api/users";
+
+export async function registerUser(payload: RegisterUserPayload): Promise<AuthResponse> {
   const res = await fetch(`${API_BASE}/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -37,7 +37,7 @@ export async function registerUser(payload: {
 }
 
 export async function loginUser(
-  payload: { password: string } & ({ email: string } | { username: string })
+  payload: LoginUserPayload
 ): Promise<AuthResponse> {
   const res = await fetch(`${API_BASE}/login`, {
     method: "POST",
@@ -62,4 +62,9 @@ export function getToken() {
 
 export function clearToken() {
   localStorage.removeItem("token");
+}
+
+export function authHeader(): Record<string, string> | undefined {
+  const t = getToken();
+  return t ? { Authorization: `Bearer ${t}` } : {};
 }

@@ -26,7 +26,7 @@ function PageLayout({
     <SidebarProvider>
       <div className="min-h-dvh flex w-full px-4">
         {sidebar}
-        <SidebarInset className="flex-1 px-8">
+        <SidebarInset className="flex-1 px-">
           <header className="flex flex-col w-full px-4">
             <div className="flex justify-between items-center w-full mt-12 pb-3">
               <h1>{title}</h1>

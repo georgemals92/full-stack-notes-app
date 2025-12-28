@@ -1,13 +1,17 @@
 // Imports
+import { RouterProvider } from "react-router-dom";
 import "./App.css";
-import NotesPage from "./pages/NotesPage";
 import { Toaster } from "@/components/ui/sonner";
+import router from "./router/router";
+import { AuthProvider } from "./context/AuthContext";
 
 function App() {
-  return(
+  return (
     <>
-    <Toaster />
-    <NotesPage />
+      <Toaster />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </>
   );
 }

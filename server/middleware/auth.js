@@ -10,7 +10,7 @@ const requireAuth = (req, res, next) => {
   if (!auth || !auth.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Missing token" });
   }
-  console.log(auth);
+  console.log(auth); // For testing
   const token = auth.slice(7);
 
   try {

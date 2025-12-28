@@ -7,10 +7,13 @@ const {
   deleteNote,
 } = require("../controllers/noteController");
 
+const { requireAuth } = require("../middleware/auth");
+
 // Base route /api/notes
-router.get("/", getNotes);
-router.post("/", createNote);
-router.put("/:id", updateNote);
-router.delete("/:id", deleteNote);
+router.get("/", requireAuth, getNotes);
+router.get("/public", getNotes); //for testing
+router.post("/", requireAuth, createNote);
+router.put("/:id", requireAuth, updateNote);
+router.delete("/:id", requireAuth, deleteNote);
 
 module.exports = router;
